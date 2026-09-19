@@ -16,7 +16,10 @@ pipeline {
   }
   stages {
     stage('Checkout') {
-      steps { checkout scm }
+      steps {
+        checkout scm
+        sh 'git submodule update --init --recursive 2>/dev/null || true'
+      }
     }
 
 stage('Cloudflare: ediacara') {
