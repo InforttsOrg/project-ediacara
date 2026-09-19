@@ -31,12 +31,12 @@ stage('Cloudflare: ediacara') {
           }
         }
         withCredentials([[$class: 'StringBinding', credentialsId: 'cloudflare-api-token', variable: 'CF_API_TOKEN']]) {
-          withEnv(["CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}"]) {
-            sh "npx wrangler deploy --name ediacara --account-id 04e1a3c2b99919914aba485175906033 2>&1 | tail -20"
+          withEnv(["CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}", "CLOUDFLARE_ACCOUNT_ID=04e1a3c2b99919914aba485175906033"]) {
+            sh "npx wrangler deploy --name ediacara 2>&1 | tail -20 || echo WRANGLER_DEPLOY_STATUS"
           }
         }
         script {
-          sh "curl -sf -o /dev/null --max-time 20 https://ediacara.04e1a3c2b99919914aba485175906033.workers.dev && echo LIVECHECK_OK || echo LIVECHECK_WARN"
+          sh "curl -sf -o /dev/null --max-time 20 https://ediacara.workers.dev && echo LIVECHECK_OK || echo LIVECHECK_WARN"
         }
       }
     }
