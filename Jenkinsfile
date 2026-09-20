@@ -14,6 +14,7 @@ pipeline {
   environment {
     MAX_GRADLE_OPTS = '-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=512m"'
   }
+  def PLAN = [:]
   stages {
     stage('Checkout') {
       steps {
