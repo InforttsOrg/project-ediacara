@@ -22,10 +22,16 @@ fi
 CURRENT_VERSION=$(cat "$VERSION_FILE" | tr -d '[:space:]')
 echo -e "${YELLOW}🔍 Current Version: v$CURRENT_VERSION${NC}"
 
-# 2. Package Check
+# 2. Package Check — respect whichever lockfile is committed. This repo uses
+#    pnpm (pnpm-lock.yaml + pnpm-workspace.yaml, no package-lock.json), so
+#    `npm install` would ignore the lock and resolve fresh versions in CI.
 echo -e "${YELLOW}📦 Checking Node.js Dependencies...${NC}"
 if [ ! -d "node_modules" ]; then
-    npm install > /dev/null 2>&1
+    if [ -f "pnpm-lock.yaml" ] && command -v pnpm > /dev/null 2>&1; then
+        pnpm install --frozen-lockfile > /dev/null 2>&1
+    else
+        npm ci > /dev/null 2>&1 || npm install > /dev/null 2>&1
+    fi
 fi
 echo -e "${GREEN}✅ Dependencies verified.${NC}"
 
@@ -36,6 +42,38 @@ if ! npx tsc --noEmit > /dev/null 2>&1; then
     exit 1
 fi
 echo -e "${GREEN}✅ TypeScript compilation verified.${NC}"
+
+if ! npx tsc --noEmit -p test/tsconfig.json > /dev/null 2>&1; then
+    echo -e "${RED}❌ Test TypeScript compilation check failed! Release rejected.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Test TypeScript compilation verified.${NC}"
+
+# 3b. Flutter Console (the Worker serves dashboard/ out of public/)
+echo -e "${YELLOW}🎨 Verifying Flutter Console (analyze + test)..."
+if ! command -v flutter > /dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Flutter not on PATH; SKIPPING console verification.${NC}"
+elif ! (cd dashboard && flutter pub get > /dev/null && flutter analyze --no-fatal-infos > /dev/null && flutter test > /dev/null); then
+    echo -e "${RED}❌ Flutter console verification failed! Release rejected.${NC}"
+    exit 1
+else
+    echo -e "${GREEN}✅ Flutter console verified.${NC}"
+fi
+
+# 3c. The Worker serves public/ as-is, so a missing build means a blank site.
+if [ ! -f "public/index.html" ] || [ ! -f "public/flutter_bootstrap.js" ]; then
+    echo -e "${RED}❌ public/ is not a Flutter build. Run 'npm run build:ui'. Release rejected.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Static UI build present.${NC}"
+
+# 3d. Worker Test Suite
+echo -e "${YELLOW}🧪 Running Worker Test Suite..."
+if ! npx vitest run > /dev/null 2>&1; then
+    echo -e "${RED}❌ Worker tests failed! Release rejected.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Worker tests passed.${NC}"
 
 # 4. Bump version on successful validation (Epoch.Major.Minor concept)
 # - Epoch: Primary developmental phase/era

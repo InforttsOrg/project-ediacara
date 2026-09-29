@@ -12,8 +12,14 @@
 		"global_fetch_strictly_public"
 	],
 	"assets": {
-		// The path to the directory containing the `index.html` file to be served at `/`
-		"directory": "./public"
+		// The Flutter console, built from `dashboard/` by `npm run build:ui`.
+		"directory": "./public",
+		"binding": "ASSETS",
+		// The Worker owns `/api/composition`, so it has to run first.
+		"run_worker_first": true,
+		// "none" keeps ASSETS from redirecting /index.html back to /, which
+		// would loop the Worker's own /index.html fetch.
+		"html_handling": "none"
 	},
 	"observability": {
 		"enabled": true

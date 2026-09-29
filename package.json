@@ -3,11 +3,16 @@
   "version": "1.2.0",
   "private": true,
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
+    "dev": "wrangler dev --port 9904",
+    "start": "wrangler dev --port 9904",
+    "build:ui": "cd dashboard && flutter build web --release && rm -rf ../public && cp -R build/web ../public",
+    "build:ui:check": "cd dashboard && flutter analyze --no-fatal-infos && flutter test",
+    "dev:ui": "cd dashboard && flutter run -d web-server --web-port 9909",
+    "deploy": "npm run build:ui && wrangler deploy",
     "test": "vitest",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test/tsconfig.json",
+    "build": "wrangler deploy --dry-run --outdir dist"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",

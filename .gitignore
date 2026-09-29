@@ -158,6 +158,11 @@ dist
 .yarn/install-state.gz
 .pnp.\*
 
+# Flutter console build intermediates (the staged output lives in public/)
+dashboard/.dart_tool/
+dashboard/build/
+dashboard/.flutter-plugins-dependencies
+
 # wrangler project
 
 .dev.vars*
