@@ -4,7 +4,9 @@
 // Requires credentials: git-github, play-service-account-json, cloudflare-api-token,
 //                       deploy-ssh, ghcr-infortts.
 
-def PLAN = [:]
+import groovy.transform.Field
+
+@Field def PLAN = [:]
 
 pipeline {
   agent { label 'vps' }
@@ -19,6 +21,7 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
+        sh 'git clean -ffdx -e ota-release.json 2>/dev/null || true'
         checkout scm
         sh 'git submodule update --init --recursive 2>/dev/null || true'
       }
@@ -27,9 +30,18 @@ pipeline {
 stage('Cloudflare: ediacara') {
       steps {
         script {
-          // pnpm-aware, fail-closed install (frozen lockfile = no drift).
+          // pnpm-aware, fail-closed install. The 'vps' label is the controller's
+          // built-in node, whose image may not ship pnpm — self-heal via npm.
           if (fileExists('pnpm-lock.yaml')) {
-            sh 'corepack enable 2>/dev/null || true; pnpm install --frozen-lockfile'
+            sh '''
+              set -e
+              if ! command -v pnpm >/dev/null 2>&1; then
+                echo "pnpm not found — installing via npm"
+                npm install -g pnpm@9 >/dev/null 2>&1
+              fi
+              pnpm --version
+              pnpm install --frozen-lockfile
+            '''
           } else if (fileExists('package.json')) {
             sh 'npm install --no-audit --no-fund'
           }
