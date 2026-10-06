@@ -6,10 +6,11 @@ import 'src/theme/ediacara_theme.dart';
 
 import 'design_skin.dart';
 import 'package:infortts_shared/infortts_shared.dart';
-void main() =>{
+void main() {
+  // Design skin for this app (generated; see tools/design-pipeline).
   AppDesignSkin.boot();
- runApp(const ProviderScope(child: EdiacaraApp()))
-};
+  runApp(const ProviderScope(child: EdiacaraApp()));
+}
 
 class EdiacaraApp extends StatelessWidget {
   const EdiacaraApp({super.key});
