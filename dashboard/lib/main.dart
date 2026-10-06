@@ -4,7 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/features/symphony/ediacara_page.dart';
 import 'src/theme/ediacara_theme.dart';
 
-void main() => runApp(const ProviderScope(child: EdiacaraApp()));
+import 'design_skin.dart';
+import 'package:infortts_shared/infortts_shared.dart';
+void main() =>{
+  AppDesignSkin.boot();
+ runApp(const ProviderScope(child: EdiacaraApp()))
+};
 
 class EdiacaraApp extends StatelessWidget {
   const EdiacaraApp({super.key});
@@ -14,7 +19,7 @@ class EdiacaraApp extends StatelessWidget {
     return MaterialApp(
       title: 'Project Ediacara — Market Symphony',
       debugShowCheckedModeBanner: false,
-      theme: EdiacaraTheme.dark(),
+      theme: AcousticTheme.applySkinTo(EdiacaraTheme.dark(), AppDesignSkin.skin),
       home: const EdiacaraPage(),
     );
   }

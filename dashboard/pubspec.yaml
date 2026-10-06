@@ -14,6 +14,8 @@ dependencies:
   http: ^1.2.2
   web: ^1.1.0
 
+  infortts_shared:
+    path: ../../shared
 dev_dependencies:
   flutter_test:
     sdk: flutter
