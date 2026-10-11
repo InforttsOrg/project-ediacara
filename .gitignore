@@ -170,3 +170,7 @@ dashboard/.flutter-plugins-dependencies
 .env*
 !.env.example
 .wrangler/
+
+# Python bytecode (release publisher + release gate)
+__pycache__/
+*.pyc
