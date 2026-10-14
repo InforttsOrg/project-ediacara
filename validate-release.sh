@@ -140,10 +140,14 @@ echo -e "${GREEN}✅ Worker tests passed.${NC}"
 
 # 3e. Secret guard: never ship tracked credentials or build caches. Untracking is
 #     not enough on its own — the next scaffold or history rewrite can re-add
-#     them, so fail closed on the index.
+#     them, so fail closed on the index. The .env pattern covers the variant files
+#     .gitignore also guards (.env.local, .env.production, .env.development): a
+#     bare `(^|/)\.env$` let `git add -f .env.production` slip a secret past the
+#     gate. `.env.example` (the secret-free tracked contract) is deliberately NOT
+#     matched.
 if git rev-parse --git-dir > /dev/null 2>&1; then
     TRACKED="$(git ls-files)"
-    LEAKED="$(printf '%s\n' "$TRACKED" | grep -E '(^|/)(key\.properties|local\.properties|google-services\.json|GoogleService-Info\.plist)$|(^|/)\.env$|\.(jks|keystore|p12|pem)$' || true)"
+    LEAKED="$(printf '%s\n' "$TRACKED" | grep -E '(^|/)(key\.properties|local\.properties|google-services\.json|GoogleService-Info\.plist)$|(^|/)\.env(\.local|\.production|\.development)?$|\.(jks|keystore|p12|pem)$' || true)"
     if [ -n "$LEAKED" ]; then
         echo -e "${RED}❌ Credential files are tracked and must never be committed:${NC}"
         printf '%s\n' "$LEAKED" >&2
@@ -160,7 +164,25 @@ else
     echo -e "${YELLOW}⚠️  Not a git checkout — skipping secret guard.${NC}"
 fi
 
-# 3f. Python release scripts must at least compile (CDN publisher).
+# 3f. Release-publisher env declaration. ci/upload_to_hf.py reads HF_TOKEN /
+#     HUGGING_FACE_HUB_TOKEN, but with no .env.example the contract is
+#     undocumented and unfalsifiable. Match the WHOLE identifier anchored at the
+#     assignment: a plain `grep -q HF_TOKEN` also matches the
+#     HUGGING_FACE_HUB_TOKEN line, so deleting the HF_TOKEN declaration would
+#     pass while the contract was gone.
+if [ ! -f ".env.example" ]; then
+    echo -e "${RED}❌ .env.example is missing — the HF_TOKEN / HUGGING_FACE_HUB_TOKEN contract used by ci/upload_to_hf.py is undeclared.${NC}"
+    exit 1
+fi
+for var in HF_TOKEN HUGGING_FACE_HUB_TOKEN; do
+    if ! grep -qE "^[[:space:]]*${var}[[:space:]]*=" .env.example; then
+        echo -e "${RED}❌ .env.example does not declare $var, but ci/upload_to_hf.py reads it.${NC}"
+        exit 1
+    fi
+done
+echo -e "${GREEN}✅ .env.example declares the release-publisher token contract.${NC}"
+
+# 3g. Python release scripts must at least compile (CDN publisher).
 if command -v python3 > /dev/null 2>&1; then
     if ! python3 -m py_compile ci/upload_to_hf.py; then
         echo -e "${RED}❌ Python release script failed to compile! Release rejected.${NC}"
@@ -171,7 +193,7 @@ else
     echo -e "${YELLOW}⚠️  python3 not found — skipping Python compile check.${NC}"
 fi
 
-# 3g. CDN publisher fail-closed contract (ci/upload_to_hf.py).
+# 3h. CDN publisher fail-closed contract (ci/upload_to_hf.py).
 #     The manifest is the contract every installed OTA client reads. The scaffold's
 #     fail-open template pins versionCode 1, advertises apk_url before the binary is
 #     uploaded, and lets a version-only publish OVERWRITE the live manifest —
