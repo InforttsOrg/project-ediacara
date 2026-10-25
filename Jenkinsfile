@@ -155,5 +155,8 @@ stage('Tag success') {
   post {
     success { echo "Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} SUCCEEDED" }
     failure { echo "Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} FAILED" }
+    always {
+      cleanWs(cleanWhenSuccess: true, cleanWhenFailure: true, notFailBuild: true, deleteDirs: true)
+    }
   }
 }
